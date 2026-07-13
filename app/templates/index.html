@@ -1,0 +1,1216 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PDF Compressor — Melu</title>
+  <meta name="description"
+    content="Comprime tus archivos PDF fácilmente con diferentes niveles de calidad. Rápido, seguro y sin límites." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet" />
+
+  <style>
+    /* ───────────────────────────── TOKENS ───────────────────────────── */
+    :root {
+      --bg: #0a0a12;
+      --surface: #12121f;
+      --surface-2: #1a1a2e;
+      --border: rgba(255, 255, 255, 0.07);
+      --border-glow: rgba(139, 92, 246, 0.4);
+
+      --accent: #8b5cf6;
+      --accent-2: #6366f1;
+      --accent-3: #a78bfa;
+      --glow: rgba(139, 92, 246, 0.25);
+
+      --text: #f1f0ff;
+      --text-muted: #7c7a9c;
+      --text-dim: #3d3b55;
+
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+      --radius-xl: 28px;
+
+      --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* ───────────────────────────── RESET ────────────────────────────── */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* ───────────────────────────── BACKGROUND FX ────────────────────── */
+    .bg-orbs {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(100px);
+      opacity: 0.18;
+      animation: drift 12s ease-in-out infinite alternate;
+    }
+
+    .orb-1 {
+      width: 500px;
+      height: 500px;
+      background: #7c3aed;
+      top: -120px;
+      left: -100px;
+      animation-delay: 0s;
+    }
+
+    .orb-2 {
+      width: 400px;
+      height: 400px;
+      background: #4f46e5;
+      bottom: -100px;
+      right: -80px;
+      animation-delay: -4s;
+    }
+
+    .orb-3 {
+      width: 300px;
+      height: 300px;
+      background: #0ea5e9;
+      top: 40%;
+      left: 55%;
+      animation-delay: -8s;
+    }
+
+    @keyframes drift {
+      from {
+        transform: translate(0, 0) scale(1);
+      }
+
+      to {
+        transform: translate(30px, 20px) scale(1.08);
+      }
+    }
+
+    /* ───────────────────────────── LAYOUT ───────────────────────────── */
+    .wrapper {
+      position: relative;
+      z-index: 1;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px 80px;
+    }
+
+    /* ───────────────────────────── HEADER ───────────────────────────── */
+    header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .logo-icon {
+      width: 42px;
+      height: 42px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 24px var(--glow);
+    }
+
+    .logo-icon svg {
+      width: 22px;
+      height: 22px;
+      fill: white;
+    }
+
+    .logo-text {
+      font-size: 22px;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent-3), var(--accent-2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    header h1 {
+      font-size: clamp(32px, 5vw, 52px);
+      font-weight: 800;
+      line-height: 1.15;
+      background: linear-gradient(135deg, #fff 30%, var(--accent-3));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 14px;
+    }
+
+    header p {
+      font-size: 16px;
+      color: var(--text-muted);
+      max-width: 440px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* ───────────────────────────── CARD ─────────────────────────────── */
+    .card {
+      width: 100%;
+      max-width: 700px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 36px;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.03);
+      backdrop-filter: blur(12px);
+    }
+
+    /* ───────────────────────────── DROP ZONE ────────────────────────── */
+    .drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: var(--radius-lg);
+      padding: 48px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
+      background: var(--surface-2);
+    }
+
+    .drop-zone::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 50% 50%, var(--glow), transparent 70%);
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    .drop-zone:hover,
+    .drop-zone.dragover {
+      border-color: var(--accent);
+      background: rgba(139, 92, 246, 0.06);
+    }
+
+    .drop-zone:hover::before,
+    .drop-zone.dragover::before {
+      opacity: 1;
+    }
+
+    .drop-zone.dragover {
+      transform: scale(1.01);
+    }
+
+    .drop-icon {
+      width: 60px;
+      height: 60px;
+      margin: 0 auto 18px;
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(99, 102, 241, 0.2));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition);
+    }
+
+    .drop-zone:hover .drop-icon,
+    .drop-zone.dragover .drop-icon {
+      background: linear-gradient(135deg, rgba(139, 92, 246, 0.4), rgba(99, 102, 241, 0.4));
+      transform: scale(1.1);
+    }
+
+    .drop-icon svg {
+      width: 28px;
+      height: 28px;
+      stroke: var(--accent-3);
+      fill: none;
+      stroke-width: 1.8;
+    }
+
+    .drop-title {
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+
+    .drop-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    .drop-btn {
+      display: inline-block;
+      margin-top: 18px;
+      padding: 9px 22px;
+      background: rgba(139, 92, 246, 0.15);
+      border: 1px solid rgba(139, 92, 246, 0.3);
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--accent-3);
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .drop-btn:hover {
+      background: rgba(139, 92, 246, 0.28);
+      border-color: var(--accent);
+    }
+
+    /* File selected state */
+    .file-preview {
+      display: none;
+      align-items: center;
+      gap: 14px;
+      padding: 14px 18px;
+      background: rgba(139, 92, 246, 0.08);
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      border-radius: var(--radius-md);
+      margin-top: 18px;
+    }
+
+    .file-preview.show {
+      display: flex;
+    }
+
+    .file-icon {
+      width: 40px;
+      height: 40px;
+      flex-shrink: 0;
+      background: linear-gradient(135deg, #dc2626, #ef4444);
+      border-radius: var(--radius-sm);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 700;
+      color: white;
+      letter-spacing: 0.5px;
+    }
+
+    .file-meta {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .file-name {
+      font-size: 14px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .file-size {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+
+    .file-remove {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: var(--transition);
+    }
+
+    .file-remove:hover {
+      background: rgba(239, 68, 68, 0.2);
+      color: var(--danger);
+    }
+
+    .file-remove svg {
+      width: 14px;
+      height: 14px;
+    }
+
+    /* ───────────────────────────── SECTION LABEL ────────────────────── */
+    .section-label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-muted);
+      margin: 28px 0 14px;
+    }
+
+    /* ───────────────────────────── LEVEL CARDS ─────────────────────── */
+    .levels-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+    }
+
+    @media (max-width: 600px) {
+      .levels-grid {
+        grid-template-columns: repeat(3, 1fr);
+      }
+    }
+
+    .level-card {
+      position: relative;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px 10px;
+      text-align: center;
+      cursor: pointer;
+      transition: var(--transition);
+      background: var(--surface-2);
+      user-select: none;
+    }
+
+    .level-card:hover {
+      border-color: var(--accent);
+      background: rgba(139, 92, 246, 0.06);
+    }
+
+    .level-card.active {
+      border-color: var(--accent);
+      background: rgba(139, 92, 246, 0.12);
+      box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.15), inset 0 0 20px rgba(139, 92, 246, 0.05);
+    }
+
+    .level-card.active::after {
+      content: '';
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 8px var(--accent);
+    }
+
+    .level-card-icon {
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .level-card-icon svg {
+      width: 24px;
+      height: 24px;
+      stroke: var(--text-muted);
+      transition: var(--transition);
+    }
+
+    .level-card.active .level-card-icon svg,
+    .level-card:hover .level-card-icon svg {
+      stroke: var(--accent-3);
+    }
+
+
+    .level-name {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .level-desc {
+      font-size: 10px;
+      color: var(--text-muted);
+      line-height: 1.4;
+    }
+
+    /* Indicador de calidad vs tamaño */
+    .level-bars {
+      display: flex;
+      gap: 3px;
+      justify-content: center;
+      margin-top: 8px;
+    }
+
+    .bar {
+      width: 6px;
+      height: 3px;
+      border-radius: 2px;
+      background: var(--border);
+      transition: var(--transition);
+    }
+
+    .bar.filled {
+      background: var(--accent);
+    }
+
+    /* ───────────────────────────── COMPRESS BTN ─────────────────────── */
+    .compress-btn {
+      width: 100%;
+      margin-top: 28px;
+      padding: 16px;
+      border: none;
+      border-radius: var(--radius-md);
+      font-family: 'Inter', sans-serif;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      background: linear-gradient(135deg, var(--accent), var(--accent-2));
+      color: white;
+      box-shadow: 0 8px 24px rgba(139, 92, 246, 0.35);
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .compress-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), transparent);
+      opacity: 0;
+      transition: opacity 0.2s;
+    }
+
+    .compress-btn:hover:not(:disabled)::before {
+      opacity: 1;
+    }
+
+    .compress-btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 32px rgba(139, 92, 246, 0.45);
+    }
+
+    .compress-btn:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .compress-btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .compress-btn svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    /* ───────────────────────────── PROGRESS ─────────────────────────── */
+    .progress-area {
+      display: none;
+      margin-top: 22px;
+    }
+
+    .progress-area.show {
+      display: block;
+    }
+
+    .progress-label {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(139, 92, 246, 0.2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 6px;
+      background: var(--surface-2);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-2));
+      transition: width 0.4s ease;
+      position: relative;
+    }
+
+    .progress-bar::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 60px;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4));
+      animation: shimmer 1.2s linear infinite;
+    }
+
+    @keyframes shimmer {
+      from {
+        transform: translateX(-60px);
+      }
+
+      to {
+        transform: translateX(60px);
+      }
+    }
+
+    /* ───────────────────────────── RESULT PANEL ─────────────────────── */
+    .result-panel {
+      display: none;
+      margin-top: 24px;
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      border-radius: var(--radius-lg);
+      background: rgba(16, 185, 129, 0.05);
+      overflow: hidden;
+      animation: slide-in 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .result-panel.show {
+      display: block;
+    }
+
+    @keyframes slide-in {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .result-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid rgba(16, 185, 129, 0.15);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .result-badge {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: rgba(16, 185, 129, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .result-badge svg {
+      width: 14px;
+      height: 14px;
+      stroke: var(--success);
+      fill: none;
+      stroke-width: 2.5;
+    }
+
+    .result-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--success);
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: rgba(16, 185, 129, 0.1);
+    }
+
+    .stat {
+      padding: 18px 16px;
+      background: var(--surface);
+      text-align: center;
+    }
+
+    .stat-val {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1;
+      margin-bottom: 5px;
+    }
+
+    .stat-val.highlight {
+      color: var(--success);
+    }
+
+    .stat-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .download-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      width: 100%;
+      padding: 15px;
+      border: none;
+      border-top: 1px solid rgba(16, 185, 129, 0.15);
+      background: rgba(16, 185, 129, 0.08);
+      color: var(--success);
+      font-family: 'Inter', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      text-decoration: none;
+    }
+
+    .download-btn:hover {
+      background: rgba(16, 185, 129, 0.15);
+    }
+
+    .download-btn svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* ───────────────────────────── ERROR ────────────────────────────── */
+    .error-panel {
+      display: none;
+      margin-top: 20px;
+      padding: 14px 18px;
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      border-radius: var(--radius-md);
+      font-size: 14px;
+      color: #fca5a5;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+
+    .error-panel.show {
+      display: flex;
+    }
+
+    .error-panel svg {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+      margin-top: 1px;
+      stroke: #ef4444;
+      fill: none;
+      stroke-width: 2;
+    }
+
+    /* ───────────────────────────── FOOTER ───────────────────────────── */
+    footer {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+      padding: 20px;
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    /* ───────────────────────────── UTILS ────────────────────────────── */
+    #pdf-input {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- Fondo ambiental -->
+  <div class="bg-orbs">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <div class="wrapper">
+
+    <!-- Header -->
+    <header>
+      <div class="logo">
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24">
+            <path d="M13 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V9L13 2z" />
+            <polyline points="13 2 13 9 20 9" />
+            <line x1="9" y1="15" x2="15" y2="15" />
+            <line x1="12" y1="12" x2="12" y2="18" />
+          </svg>
+        </div>
+        <span class="logo-text">Melu PDF's</span>
+      </div>
+      <h1>Comprime tus PDFs<br />ya sin esperar!</h1>
+      <p>Solo arrastra aqui el pdf, elige el nivel de compresión y descargalo ya comprimido.</p>
+    </header>
+
+    <!-- Card principal -->
+    <div class="card">
+
+      <!-- Drop Zone -->
+      <div class="drop-zone" id="drop-zone" role="button" tabindex="0" aria-label="Zona de carga de PDF">
+        <div class="drop-icon">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+            <polyline points="17 8 12 3 7 8" />
+            <line x1="12" y1="3" x2="12" y2="15" />
+          </svg>
+        </div>
+        <div class="drop-title">Arrastra tu PDF aquí</div>
+        <div class="drop-subtitle">o selecciona un archivo desde tu equipo</div>
+        <div class="drop-btn" id="browse-btn">Seleccionar archivo</div>
+      </div>
+
+      <input type="file" id="pdf-input" accept=".pdf" />
+
+      <!-- Preview del archivo -->
+      <div class="file-preview" id="file-preview">
+        <div class="file-icon">PDF</div>
+        <div class="file-meta">
+          <div class="file-name" id="file-name">documento.pdf</div>
+          <div class="file-size" id="file-size">0 MB</div>
+        </div>
+        <button class="file-remove" id="file-remove" aria-label="Quitar archivo">
+          <svg viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- Nivel de compresión -->
+      <div class="section-label">Nivel de compresión</div>
+
+      <div class="levels-grid" id="levels-grid" role="radiogroup" aria-label="Nivel de compresión">
+
+        <div class="level-card" data-level="1" role="radio" aria-checked="false" tabindex="0">
+          <div class="level-card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <polyline points="6 9 6 2 18 2 18 9" />
+              <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+              <rect x="6" y="14" width="12" height="8" />
+            </svg>
+          </div>
+          <div class="level-name">Imprenta</div>
+          <div class="level-desc">5</div>
+          <div class="level-bars">
+            <div class="bar filled"></div>
+            <div class="bar filled"></div>
+            <div class="bar filled"></div>
+            <div class="bar filled"></div>
+            <div class="bar filled"></div>
+          </div>
+        </div>
+
+        <div class="level-card" data-level="2" role="radio" aria-checked="false" tabindex="0">
+          <div class="level-card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+              <line x1="8" y1="21" x2="16" y2="21" />
+              <line x1="12" y1="17" x2="12" y2="21" />
+            </svg>
+          </div>
+          <div class="level-name">Impresora</div>
+          <div class="level-desc">4</div>
+          <div class="level-bars">
+            <div class="bar filled"></div>
+            <div class="bar filled"></div>
+            <div class="bar filled"></div>
+            <div class="bar filled"></div>
+            <div class="bar"></div>
+          </div>
+        </div>
+
+        <div class="level-card" data-level="0" role="radio" aria-checked="false" tabindex="0">
+          <div class="level-card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M3 6h18M12 6v14M8 10l-4 4 4 4M16 10l4 4-4 4" />
+            </svg>
+          </div>
+          <div class="level-name">General</div>
+          <div class="level-desc">3</div>
+          <div class="level-bars">
+            <div class="bar filled"></div>
+            <div class="bar filled"></div>
+            <div class="bar filled"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+          </div>
+        </div>
+
+        <div class="level-card active" data-level="3" role="radio" aria-checked="true" tabindex="0">
+          <div class="level-card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+            </svg>
+          </div>
+          <div class="level-name">Equilibrado</div>
+          <div class="level-desc">2</div>
+          <div class="level-bars">
+            <div class="bar filled"></div>
+            <div class="bar filled"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+          </div>
+        </div>
+
+        <div class="level-card" data-level="4" role="radio" aria-checked="false" tabindex="0">
+          <div class="level-card-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <rect x="5" y="2" width="14" height="20" rx="2" ry="2" />
+              <line x1="12" y1="18" x2="12.01" y2="18" />
+            </svg>
+          </div>
+          <div class="level-name">Máximo</div>
+          <div class="level-desc">1</div>
+          <div class="level-bars">
+            <div class="bar filled"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Botón comprimir -->
+      <button class="compress-btn" id="compress-btn" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round">
+          <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+        </svg>
+        Comprimir PDF
+      </button>
+
+      <!-- Progreso -->
+      <div class="progress-area" id="progress-area">
+        <div class="progress-label">
+          <div class="spinner"></div>
+          <span id="progress-text">Comprimiendo con Ghostscript…</span>
+        </div>
+        <div class="progress-track">
+          <div class="progress-bar" id="progress-bar" style="width: 10%"></div>
+        </div>
+      </div>
+
+      <!-- Error -->
+      <div class="error-panel" id="error-panel">
+        <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+        <span id="error-text">Error desconocido.</span>
+      </div>
+
+      <!-- Resultado -->
+      <div class="result-panel" id="result-panel">
+        <div class="result-header">
+          <div class="result-badge">
+            <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </div>
+          <div class="result-title">¡Compresión exitosa!</div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat">
+            <div class="stat-val" id="stat-original">—</div>
+            <div class="stat-label">Tamaño original</div>
+          </div>
+          <div class="stat">
+            <div class="stat-val" id="stat-compressed">—</div>
+            <div class="stat-label">Tamaño final</div>
+          </div>
+          <div class="stat">
+            <div class="stat-val highlight" id="stat-savings">—</div>
+            <div class="stat-label">Reducción</div>
+          </div>
+        </div>
+
+        <a class="download-btn" id="download-btn" href="#" download>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          Descargar PDF comprimido
+        </a>
+      </div>
+
+    </div><!-- /.card -->
+
+  </div><!-- /.wrapper -->
+
+  <footer>
+    Melu PDF Compressor — Powered by Ghostscript &amp; Flask
+  </footer>
+
+  <script>
+    /* ─────────── State ─────────── */
+    let selectedFile = null;
+    let selectedLevel = 3;
+    let currentToken = null;
+    let currentFileName = '';
+    let progressInterval = null;
+
+    /* ─────────── Elements ─────────── */
+    const dropZone = document.getElementById('drop-zone');
+    const pdfInput = document.getElementById('pdf-input');
+    const browseBtn = document.getElementById('browse-btn');
+    const filePreview = document.getElementById('file-preview');
+    const fileNameEl = document.getElementById('file-name');
+    const fileSizeEl = document.getElementById('file-size');
+    const fileRemove = document.getElementById('file-remove');
+    const compressBtn = document.getElementById('compress-btn');
+    const progressArea = document.getElementById('progress-area');
+    const progressBar = document.getElementById('progress-bar');
+    const progressText = document.getElementById('progress-text');
+    const errorPanel = document.getElementById('error-panel');
+    const errorText = document.getElementById('error-text');
+    const resultPanel = document.getElementById('result-panel');
+    const downloadBtn = document.getElementById('download-btn');
+    const levelsGrid = document.getElementById('levels-grid');
+
+    /* ─────────── File utilities ─────────── */
+    function formatSize(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+    }
+
+    function setFile(file) {
+      selectedFile = file;
+      fileNameEl.textContent = file.name;
+      fileSizeEl.textContent = formatSize(file.size);
+      filePreview.classList.add('show');
+      compressBtn.disabled = false;
+      hideResults();
+    }
+
+    function clearFile() {
+      selectedFile = null;
+      pdfInput.value = '';
+      filePreview.classList.remove('show');
+      compressBtn.disabled = true;
+      hideResults();
+    }
+
+    function hideResults() {
+      resultPanel.classList.remove('show');
+      errorPanel.classList.remove('show');
+      progressArea.classList.remove('show');
+      clearInterval(progressInterval);
+    }
+
+    /* ─────────── Drag & Drop ─────────── */
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('dragover');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file && file.type === 'application/pdf') {
+        setFile(file);
+      } else {
+        showError('Solo se aceptan archivos PDF.');
+      }
+    });
+
+    dropZone.addEventListener('click', () => pdfInput.click());
+    browseBtn.addEventListener('click', (e) => { e.stopPropagation(); pdfInput.click(); });
+
+    dropZone.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pdfInput.click(); }
+    });
+
+    pdfInput.addEventListener('change', () => {
+      if (pdfInput.files[0]) setFile(pdfInput.files[0]);
+    });
+
+    fileRemove.addEventListener('click', clearFile);
+
+    /* ─────────── Level selection ─────────── */
+    levelsGrid.querySelectorAll('.level-card').forEach(card => {
+      card.addEventListener('click', () => selectLevel(parseInt(card.dataset.level)));
+      card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectLevel(parseInt(card.dataset.level)); }
+      });
+    });
+
+    function selectLevel(level) {
+      selectedLevel = level;
+      levelsGrid.querySelectorAll('.level-card').forEach(c => {
+        const active = parseInt(c.dataset.level) === level;
+        c.classList.toggle('active', active);
+        c.setAttribute('aria-checked', active ? 'true' : 'false');
+      });
+    }
+
+    /* ─────────── Progress animation ─────────── */
+    function startProgress() {
+      progressArea.classList.add('show');
+      resultPanel.classList.remove('show');
+      errorPanel.classList.remove('show');
+      let pct = 10;
+
+      progressBar.style.width = pct + '%';
+
+      const messages = [
+        'Comprimiendo con Ghostscript…',
+        'Optimizando imágenes…',
+        'Reescribiendo flujos…',
+        'Finalizando…'
+      ];
+      let msgIdx = 0;
+
+      progressInterval = setInterval(() => {
+        if (pct < 80) {
+          pct += Math.random() * 12;
+          pct = Math.min(pct, 80);
+          progressBar.style.width = pct + '%';
+        }
+        if (msgIdx < messages.length - 1) {
+          msgIdx++;
+          progressText.textContent = messages[msgIdx];
+        }
+      }, 900);
+    }
+
+    function finishProgress() {
+      clearInterval(progressInterval);
+      progressBar.style.width = '100%';
+      setTimeout(() => progressArea.classList.remove('show'), 400);
+    }
+
+    /* ─────────── Error helper ─────────── */
+    function showError(msg) {
+      errorText.textContent = msg;
+      errorPanel.classList.add('show');
+      progressArea.classList.remove('show');
+      clearInterval(progressInterval);
+    }
+
+    /* ─────────── Compress ─────────── */
+    compressBtn.addEventListener('click', async () => {
+      if (!selectedFile) return;
+
+      compressBtn.disabled = true;
+      hideResults();
+      startProgress();
+
+      const formData = new FormData();
+      formData.append('pdf', selectedFile);
+      formData.append('level', selectedLevel);
+
+      try {
+        const res = await fetch('/compress', { method: 'POST', body: formData });
+        const data = await res.json();
+
+        finishProgress();
+
+        if (!data.success) {
+          showError(data.error || 'Error desconocido al comprimir.');
+          compressBtn.disabled = false;
+          return;
+        }
+
+        /* Mostrar resultados */
+        document.getElementById('stat-original').textContent = data.original_size_str;
+        document.getElementById('stat-compressed').textContent = data.compressed_size_str;
+        document.getElementById('stat-savings').textContent = data.savings_pct + '%';
+
+        const dlUrl = `/download/${data.token}?name=${encodeURIComponent(data.original_name)}`;
+        downloadBtn.href = dlUrl;
+
+        resultPanel.classList.add('show');
+        resultPanel.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+      } catch (err) {
+        finishProgress();
+        showError('Error de red o el servidor no está disponible.');
+      } finally {
+        compressBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+
+</html>
