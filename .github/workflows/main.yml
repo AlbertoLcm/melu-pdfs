@@ -60,14 +60,12 @@ jobs:
       - name: Compilar aplicación con PyInstaller
         shell: powershell
         run: |
-          # Se incluyen explícitamente las carpetas estáticas de Flask y la carpeta de Ghostscript compilada.
-          # Nota: Si tu archivo principal no se llama 'app.py', cambia el nombre al final de la línea.
+          # Se incluyen las carpetas de templates de Flask y el Ghostscript portátil descargado.
           pyinstaller --onefile `
                       --name "MeluPDF" `
-                      --add-data "templates;templates" `
-                      --add-data "static;static" `
+                      --add-data "app/templates;app/templates" `
                       --add-data "ghostscript_bin;ghostscript_bin" `
-                      app.py
+                      main.py
 
       - name: Almacenar ejecutable compilado como Artefacto
         uses: actions/upload-artifact@v4
