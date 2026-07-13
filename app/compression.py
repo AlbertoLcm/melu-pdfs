@@ -4,9 +4,18 @@ import sys
 
 
 def _get_gs_command() -> str:
-    """Detecta el comando correcto de Ghostscript según el sistema operativo."""
+    """
+    Detecta el comando correcto de Ghostscript.
+    Si corre como .exe (PyInstaller), usa el binario empaquetado.
+    Si corre en local, usa el del sistema (PATH).
+    """
+    if getattr(sys, 'frozen', False):
+        base_path = sys._MEIPASS
+        
+        gs_bundled_path = os.path.join(base_path, "ghostscript_bin", "gswin64c.exe")
+        return gs_bundled_path
+    
     return "gswin64c" if sys.platform == "win32" else "gs"
-
 
 def comprimir_pdf(ruta_entrada: str, ruta_salida: str, nivel_compresion: int = 3) -> dict:
     """
