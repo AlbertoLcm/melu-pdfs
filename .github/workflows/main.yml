@@ -1,0 +1,77 @@
+name: Build and Release Plug-and-Play EXE
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch: # Permite ejecutar el flujo de forma manual desde la interfaz de GitHub
+
+jobs:
+  build-windows:
+    name: Compilar Ejecutable para Windows
+    runs-on: windows-latest
+
+    steps:
+      - name: Descargar código del repositorio
+        uses: actions/checkout@v4
+
+      - name: Configurar entorno de Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip' # Almacena las dependencias en caché para acelerar futuras ejecuciones
+
+      - name: Instalar dependencias del sistema y PyInstaller
+        shell: powershell
+        run: |
+          python -m pip install --upgrade pip
+          if (Test-Path requirements.txt) {
+              pip install -r requirements.txt
+          } else {
+              Write-Host "requirements.txt no encontrado, instalando dependencias base de Flask..."
+              pip install flask
+          }
+          pip install pyinstaller
+
+      # Para evitar subir archivos binarios pesados (.exe, .dll) al historial de Git,
+      # este paso descarga automáticamente la versión portátil oficial de Ghostscript en el runner.
+      - name: Descargar y preparar Ghostscript Portable
+        shell: powershell
+        run: |
+          # 1. Crear el directorio destino que espera PyInstaller
+          New-Item -ItemType Directory -Force -Path .\ghostscript_bin
+          
+          # 2. Descargar instalador autoextraíble oficial de Ghostscript de 64 bits (v10.03.1 como referencia)
+          $gsUrl = "https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs10031/gs10031w64.exe"
+          Write-Host "Descargando Ghostscript desde $gsUrl..."
+          Invoke-WebRequest -Uri $gsUrl -OutFile "gs_setup.exe"
+          
+          # 3. Extraer el contenido usando 7-Zip (preinstalado en el entorno de GitHub Actions)
+          Write-Host "Extrayendo binarios de Ghostscript..."
+          7z x gs_setup.exe -o"gs_extracted" -y
+          
+          # 4. Mover solo los archivos esenciales independientes (CLI y enlace dinámico) a la carpeta del proyecto
+          Copy-Item "gs_extracted\bin\gswin64c.exe" -Destination .\ghostscript_bin\
+          Copy-Item "gs_extracted\bin\gsdll64.dll" -Destination .\ghostscript_bin\
+          
+          Write-Host "Ghostscript preparado exitosamente en la carpeta ghostscript_bin."
+
+      - name: Compilar aplicación con PyInstaller
+        shell: powershell
+        run: |
+          # Se incluyen explícitamente las carpetas estáticas de Flask y la carpeta de Ghostscript compilada.
+          # Nota: Si tu archivo principal no se llama 'app.py', cambia el nombre al final de la línea.
+          pyinstaller --onefile `
+                      --name "MeluPDF" `
+                      --add-data "templates;templates" `
+                      --add-data "static;static" `
+                      --add-data "ghostscript_bin;ghostscript_bin" `
+                      app.py
+
+      - name: Almacenar ejecutable compilado como Artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: MeluPDF-Windows-EXE
+          path: dist/MeluPDF.exe
+          retention-days: 7 # El archivo estará disponible para descargar durante 7 días
